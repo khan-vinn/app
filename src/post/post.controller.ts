@@ -42,8 +42,8 @@ export class PostController {
 
   @Put()
   async updateOne(
-    id: number,
-    updatePostDto: PostUpdateDto,
+    @Body() id: number,
+    @Body(new ValidationPipe()) updatePostDto: PostUpdateDto,
   ): Promise<PostEntity> {
     return await this.postService.updateOne(id, updatePostDto);
   }
