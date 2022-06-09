@@ -7,7 +7,7 @@ import { sign } from 'jsonwebtoken';
 import { UserResponse } from './types/userResponse';
 import { LoginUserDto } from './dto/loginUser.dto';
 import { compare } from 'bcrypt';
-import { compareSync } from 'bcrypt';
+import { UpdateUserDto } from './dto/updateUser.dto';
 
 @Injectable()
 export class UserService {
@@ -45,16 +45,20 @@ export class UserService {
   }
 
   async login(loginUserDto: LoginUserDto): Promise<UserEntity> {
-    const user = await this.userRepository.findOne({
-      email: loginUserDto.email,
-    });
+    const user = await this.userRepository.findOne(
+      {
+        email: loginUserDto.email,
+      },
+      { select: ['password', 'bio', 'email', 'username', 'image', 'id'] },
+    );
     if (!user) {
       throw new HttpException(
         'password or login incorrect',
         HttpStatus.UNAUTHORIZED,
       );
     }
-    if (!compareSync(loginUserDto.password, user.password)) {
+    const isLoggedIn = await compare(loginUserDto.password, user.password);
+    if (!isLoggedIn) {
       throw new HttpException(
         'password or login incorrect',
         HttpStatus.UNAUTHORIZED,
@@ -74,5 +78,13 @@ export class UserService {
       },
       process.env.JWT_SECRET,
     );
+  }
+  findById(id: number): Promise<UserEntity> {
+    return this.userRepository.findOne(id);
+  }
+  async update(currentUserId: number, updateUserDto: UpdateUserDto) {
+    const currentUser = await this.userRepository.findOne(currentUserId);
+    Object.assign(currentUser, updateUserDto);
+    return await this.userRepository.save(currentUser);
   }
 }
